@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<title>Tangent og deriverbarhet</title>
+
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+#plot {
+    width: 100%;
+    height: 700px;
+}
+
+.controls {
+    margin-top: 20px;
+    font-size: 18px;
+}
+
+input[type=range] {
+    width: 600px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Undersøk tangent og stigningstall</h2>
+
+<div id="plot"></div>
+
+<div class="controls">
+    x =
+    <input type="range" id="slider"
+           min="-5.5"
+           max="4.9"
+           step="0.01"
+           value="0">
+
+    <span id="xValue">0.00</span>
+
+    <p id="info"></p>
+</div>
+
+<script>
+
+// ====================
+// FUNKSJON
+// ====================
+
+function f(x) {
+
+    if (x <= -2) {
+        return (10/9) * Math.pow(x + 3.5, 2) + 0.5;
+    }
+
+    else if (x < 2) {
+        return 0.5 * x * x + 1;
+    }
+
+    else {
+        return (2/3) * x + 3.2;   // lite sprang ved x=2
+    }
+}
+
+// ====================
+// DERIVERT
+// ====================
+
+function df(x) {
+
+    if (x < -2) {
+        return (20/9) * (x + 3.5);
+    }
+
+    else if (x < 2) {
+        return x;
+    }
+
+    else if (x > 2) {
+        return 2/3;
+    }
+
+    return null;
+}
+
+// ====================
+// DATA FOR VENSTRE DEL
+// ====================
+
+let xLeft = [];
+let yLeft = [];
+
+for(let x=-6; x<2; x+=0.01){
+    xLeft.push(x);
+    yLeft.push(f(x));
+}
+
+// ====================
+// DATA FOR HØYRE DEL
+// ====================
+
+let xRight = [];
+let yRight = [];
+
+for(let x=2; x<=5; x+=0.01){
+    xRight.push(x);
+    yRight.push(f(x));
+}
+
+// ====================
+// HOPP-PUNKTER
+// ====================
+
+const leftLimit = 3.0;      // verdi fra venstre
+const rightValue = f(2);    // verdi fra høyre
+
+// ====================
+// STARTVERDI
+// ====================
+
+let x0 = 0;
+let y0 = f(x0);
+
+// ====================
+// TANGENTDATA
+// ====================
+
+function tangentData(x0){
+
+    let m = df(x0);
+
+    if(m === null){
+        return {
+            x: [],
+            y: []
+        };
+    }
+
+    let xt = [];
+    let yt = [];
+
+    for(let x=x0-1.2; x<=x0+1.2; x+=0.01){
+
+        xt.push(x);
+        yt.push(
+            m*(x-x0)+y0
+        );
+    }
+
+    return {
+        x: xt,
+        y: yt
+    };
+}
+
+let tangent = tangentData(x0);
+
+// ====================
+// GRAFER
+// ====================
+
+let data = [
+
+{
+    x: xLeft,
+    y: yLeft,
+    mode: 'lines',
+    name: 'f(x)',
+    line: {
+        color: 'teal',
+        width: 4
+    }
+},
+
+{
+    x: xRight,
+    y: yRight,
+    mode: 'lines',
+    showlegend: false,
+    line: {
+        color: 'teal',
+        width: 4
+    }
+},
+
+// ÅPEN SIRKEL
+
+{
+    x: [2],
+    y: [leftLimit],
+    mode: 'markers',
+    showlegend: false,
+    marker: {
+        size: 12,
+        color: 'white',
+        line: {
+            color: 'teal',
+            width: 3
+        }
+    }
+},
+
+// FYLT SIRKEL
+
+{
+    x: [2],
+    y: [rightValue],
+    mode: 'markers',
+    showlegend: false,
+    marker: {
+        size: 12,
+        color: 'teal'
+    }
+},
+
+// PUNKT SOM STYRES AV SLIDER
+
+{
+    x: [x0],
+    y: [y0],
+    mode: 'markers',
+    name: 'Punkt',
+    marker: {
+        color: 'red',
+        size: 14
+    }
+},
+
+// TANGENT
+
+{
+    x: tangent.x,
+    y: tangent.y,
+    mode: 'lines',
+    name: 'Tangent',
+    line: {
+        color: 'red',
+        dash: 'dash',
+        width: 3
+    }
+}
+
+];
+
+// ====================
+// LAYOUT
+// ====================
+
+let layout = {
+
+    title: "Tangent og deriverbarhet",
+
+    showlegend: true,
+
+    xaxis: {
+        range: [-6,5]
+    },
+
+    yaxis: {
+        range: [0,9]
+    },
+
+    annotations: [{
+        x: -5.3,
+        y: 8,
+        text: "",
+        showarrow: false,
+        align: "left",
+        font: {
+            size: 16
+        }
+    }]
+};
+
+Plotly.newPlot("plot", data, layout);
+
+// ====================
+// OPPDATERING
+// ====================
+
+function updatePlot(val){
+
+    x0 = parseFloat(val);
+    y0 = f(x0);
+
+    document.getElementById("xValue").innerText =
+        x0.toFixed(2);
+
+    let tangent = tangentData(x0);
+
+    // punkt
+
+    Plotly.restyle(
+        "plot",
+        {
+            x: [[x0]],
+            y: [[y0]]
+        },
+        [4]
+    );
+
+    // tangent
+
+    Plotly.restyle(
+        "plot",
+        {
+            x: [tangent.x],
+            y: [tangent.y]
+        },
+        [5]
+    );
+
+    let text = "";
+    let m = df(x0);
+
+    if(m === null){
+
+        text =
+            "x = 2<br>" +
+            "Funksjonen har sprang.<br>" +
+            "Ingen tangent definert.";
+
+        document.getElementById("info").innerHTML =
+            "<b>Funksjonen er ikke kontinuerlig i x=2.</b>";
+    }
+
+    else{
+
+        text =
+            `x = ${x0.toFixed(2)}<br>` +
+            `stigningstall = ${m.toFixed(3)}`;
+
+        document.getElementById("info").innerHTML =
+            `<b>Stigningstall:</b> ${m.toFixed(3)}`;
+    }
+
+    Plotly.relayout(
+        "plot",
+        {
+            annotations: [{
+                x: -5.3,
+                y: 8,
+                text: text,
+                showarrow: false,
+                align: "left",
+                font: {
+                    size: 16
+                }
+            }]
+        }
+    );
+}
+
+// ====================
+// SLIDER
+// ====================
+
+document
+.getElementById("slider")
+.addEventListener("input", function() {
+
+    updatePlot(this.value);
+
+});
+
+updatePlot(0);
+
+</script>
+
+</body>
+</html>
